@@ -20,10 +20,10 @@ except ImportError:
     MYSQL_AVAILABLE = False
 
 # ── Config ──────────────────────────────────────────────────────────────────
-DB_HOST     = os.environ.get("DB_HOST",     "localhost")
+DB_HOST     = os.environ.get("DB_HOST",     "127.0.0.1")
 DB_PORT     = int(os.environ.get("DB_PORT", "3306"))
 DB_USER     = os.environ.get("DB_USER",     "root")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "123")
 DB_NAME     = os.environ.get("DB_NAME",     "fc_ironclad")
 SQLITE_PATH = os.environ.get("SQLITE_PATH", "fc_ironclad.db")
 

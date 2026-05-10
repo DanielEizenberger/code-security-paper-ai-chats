@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}FC Ironclad — Home{% endblock %}
+
+{% block content %}
+{# ── HERO ────────────────────────────────────────────────────────────── #}
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Welcome to</p>
+    <h1 class="hero-title">FC<br><em>IRONCLAD</em></h1>
+    <p class="hero-sub">Built on grit. Powered by passion. United as one.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('news.index') }}" class="btn btn-green btn-lg">Latest News</a>
+      <a href="{{ url_for('schedule.download') }}" class="btn btn-outline btn-lg">⬇ Schedule PNG</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">12</span><span class="stat-label">Seasons</span></div>
+    <div class="stat"><span class="stat-num">340</span><span class="stat-label">Members</span></div>
+    <div class="stat"><span class="stat-num">5</span><span class="stat-label">Trophies</span></div>
+  </div>
+</section>
+
+{# ── PINNED POST ─────────────────────────────────────────────────────── #}
+{% if pinned %}
+<section class="section-pinned container">
+  <div class="pinned-tag">📌 Pinned Announcement</div>
+  <article class="card card-featured">
+    <div class="card-meta">
+      <span class="badge badge-{{ pinned.category|lower|replace(' ','-') }}">{{ pinned.category }}</span>
+      <span class="card-date">{{ pinned.created_at.strftime('%d %b %Y') }}</span>
+      <span class="card-author">by {{ pinned.author.display_name }}</span>
+    </div>
+    <h2><a href="{{ url_for('news.detail', post_id=pinned.id) }}">{{ pinned.title }}</a></h2>
+    <p class="card-excerpt">{{ pinned.body[:280] }}{% if pinned.body|length > 280 %}…{% endif %}</p>
+    <a href="{{ url_for('news.detail', post_id=pinned.id) }}" class="btn btn-sm btn-green">Read More →</a>
+  </article>
+</section>
+{% endif %}
+
+{# ── RECENT NEWS ─────────────────────────────────────────────────────── #}
+<section class="section container">
+  <div class="section-header">
+    <h2 class="section-title">Recent News</h2>
+    <a href="{{ url_for('news.index') }}" class="section-link">All news →</a>
+  </div>
+  <div class="card-grid">
+    {% for post in recent %}
+    <article class="card">
+      <div class="card-meta">
+        <span class="badge badge-{{ post.category|lower|replace(' ','-') }}">{{ post.category }}</span>
+        <span class="card-date">{{ post.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+      <h3><a href="{{ url_for('news.detail', post_id=post.id) }}">{{ post.title }}</a></h3>
+      <p class="card-excerpt">{{ post.body[:160] }}{% if post.body|length > 160 %}…{% endif %}</p>
+      <span class="card-author">✍ {{ post.author.display_name }}</span>
+    </article>
+    {% else %}
+    <p class="empty-state">No news yet. <a href="{{ url_for('auth.register') }}">Join the club</a> to post the first update!</p>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── UPCOMING FIXTURES ────────────────────────────────────────────────── #}
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Upcoming Fixtures</h2>
+      <a href="{{ url_for('schedule.index') }}" class="section-link">Full schedule →</a>
+    </div>
+    <div class="fixture-list">
+      {% for m in upcoming %}
+      <div class="fixture-row">
+        <span class="fixture-date">{{ m.date }}</span>
+        <span class="fixture-time">{{ m.time }}</span>
+        <span class="fixture-vs">FC Ironclad <em>vs</em> {{ m.opponent }}</span>
+        <span class="fixture-comp">{{ m.competition }}</span>
+        <span class="ha-badge ha-{{ m.location|lower }}">{{ m.location }}</span>
+      </div>
+      {% else %}
+      <p class="empty-state">Schedule coming soon.</p>
+      {% endfor %}
+    </div>
+    <div style="text-align:center; margin-top:2rem;">
+      <a href="{{ url_for('schedule.download') }}" class="btn btn-outline">⬇ Download Full Schedule (PNG)</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

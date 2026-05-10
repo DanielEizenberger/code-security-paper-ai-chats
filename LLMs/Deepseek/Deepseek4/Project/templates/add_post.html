@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add News Post - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✍️ Create News Post</h1>
+            <nav><a href="/dashboard">← Dashboard</a></nav>
+        </header>
+
+        <main>
+            <form method="POST" class="form">
+                <label>Title:</label>
+                <input type="text" name="title" required>
+                <label>Content:</label>
+                <textarea name="content" rows="6" required></textarea>
+                <button type="submit" class="btn">Publish Post</button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

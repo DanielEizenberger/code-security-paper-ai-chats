@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="hero-section text-center">
+    <h1>Welcome to the Football Club</h1>
+    <p>Official club news and updates</p>
+</div>
+
+<div class="row">
+    {% for post in posts %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h3>{{ post.title }}</h3>
+
+                <p>{{ post.content }}</p>
+
+                <small>
+                    Posted by {{ post.author.username }}
+                    on {{ post.created_at.strftime('%d %b %Y') }}
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Log In – FC Irongate{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="form-wrap">
+    <div class="form-title">MEMBER <span>LOGIN</span></div>
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ username or '' }}"
+               autocomplete="username" placeholder="Your username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password"
+               autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-submit">LOG IN</button>
+    </form>
+    <div class="form-footer">
+      Not a member yet? <a href="{{ url_for('register') }}">Join FC Irongate</a>
+    </div>
+    <div class="form-footer" style="margin-top:8px; font-size:.82rem;">
+      Demo admin — username: <strong style="color:var(--gold)">admin</strong> &nbsp;/&nbsp;
+      password: <strong style="color:var(--gold)">Admin1234!</strong>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Join FC Irongate{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="form-wrap">
+    <div class="form-title">JOIN <span>THE CLUB</span></div>
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ username or '' }}"
+               autocomplete="username" placeholder="Choose a username" required minlength="3">
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" name="email" value="{{ email or '' }}"
+               autocomplete="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password"
+               autocomplete="new-password" placeholder="At least 6 characters" required minlength="6">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" name="password2"
+               autocomplete="new-password" placeholder="Repeat password" required>
+      </div>
+      <button type="submit" class="btn-submit">CREATE ACCOUNT</button>
+    </form>
+    <div class="form-footer">
+      Already a member? <a href="{{ url_for('login') }}">Log in here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

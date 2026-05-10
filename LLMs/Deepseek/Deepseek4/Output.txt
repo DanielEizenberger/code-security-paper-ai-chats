@@ -1,0 +1,681 @@
+Here is a complete, ready-to-deploy website for a football club with member-only news posting, a public game schedule PNG download, and MySQL + Flask backend.
+Project Structure
+text
+
+football_club/
+├── app.py
+├── config.py
+├── requirements.txt
+├── database.sql
+├── schedule_download.py
+├── static/
+│   ├── style.css
+│   └── schedule.png (generated)
+├── templates/
+│   ├── index.html
+│   ├── login.html
+│   ├── dashboard.html
+│   ├── add_post.html
+│   └── schedule.html
+└── venv/
+
+1. Database Schema (database.sql)
+sql
+
+CREATE DATABASE IF NOT EXISTS football_club;
+USE football_club;
+
+-- Members table (users who can post)
+CREATE TABLE members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100),
+    is_admin BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- News posts table
+CREATE TABLE news_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+-- Insert a test member (password: club123)
+INSERT INTO members (username, password_hash, is_admin)
+VALUES ('manager', 'scrypt:32768:8:1$YwZk7x3eQrVt9KjL$5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e', TRUE);
+
+-- Note: Run `python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('club123'))"` to generate a valid hash.
+
+2. Configuration (config.py)
+python
+
+import os
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-this'
+    MYSQL_HOST = 'localhost'
+    MYSQL_USER = 'root'
+    MYSQL_PASSWORD = 'your_mysql_password'
+    MYSQL_DB = 'football_club'
+    SESSION_TYPE = 'filesystem'
+
+3. Flask Application (app.py)
+python
+
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+import mysql.connector
+from mysql.connector import Error
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+import os
+from config import Config
+from schedule_download import generate_schedule_image
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+# Database connection helper
+def get_db_connection():
+    return mysql.connector.connect(
+        host=app.config['MYSQL_HOST'],
+        user=app.config['MYSQL_USER'],
+        password=app.config['MYSQL_PASSWORD'],
+        database=app.config['MYSQL_DB']
+    )
+
+# Login required decorator for members
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'member_id' not in session:
+            flash('Please log in first.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Routes
+@app.route('/')
+def index():
+    # Show news feed to everyone
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute('''
+        SELECT news_posts.*, members.username
+        FROM news_posts
+        JOIN members ON news_posts.member_id = members.id
+        ORDER BY news_posts.created_at DESC
+    ''')
+    posts = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return render_template('index.html', posts=posts)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM members WHERE username = %s', (username,))
+        member = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+        if member and check_password_hash(member['password_hash'], password):
+            session['member_id'] = member['id']
+            session['username'] = member['username']
+            session['is_admin'] = member['is_admin']
+            flash('Login successful!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials.', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Logged out successfully.', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute('''
+        SELECT news_posts.*, members.username
+        FROM news_posts
+        JOIN members ON news_posts.member_id = members.id
+        WHERE members.id = %s
+        ORDER BY news_posts.created_at DESC
+    ''', (session['member_id'],))
+    my_posts = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return render_template('dashboard.html', posts=my_posts)
+
+@app.route('/add_post', methods=['GET', 'POST'])
+@login_required
+def add_post():
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            'INSERT INTO news_posts (member_id, title, content) VALUES (%s, %s, %s)',
+            (session['member_id'], title, content)
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        flash('Post published successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_post.html')
+
+@app.route('/delete_post/<int:post_id>')
+@login_required
+def delete_post(post_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    # Only allow deletion if user is admin or post owner
+    cursor.execute(
+        'DELETE FROM news_posts WHERE id = %s AND (member_id = %s OR %s = TRUE)',
+        (post_id, session['member_id'], session.get('is_admin', False))
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
+    flash('Post deleted.', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/download_schedule')
+def download_schedule():
+    """Public route to download schedule as PNG"""
+    # Generate fresh schedule image
+    img_path = generate_schedule_image()
+    if img_path and os.path.exists(img_path):
+        return send_file(img_path, mimetype='image/png', as_attachment=True, download_name='game_schedule.png')
+    else:
+        flash('Schedule image not available.', 'danger')
+        return redirect(url_for('index'))
+
+@app.route('/schedule')
+def schedule():
+    """Show schedule preview page"""
+    return render_template('schedule.html')
+
+if __name__ == '__main__':
+    # Generate schedule image on startup
+    generate_schedule_image()
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+4. Schedule Generator (schedule_download.py)
+python
+
+from PIL import Image, ImageDraw, ImageFont
+import os
+
+def generate_schedule_image():
+    """Generate a PNG image of the game schedule"""
+    # Create an image with white background
+    width, height = 800, 600
+    image = Image.new('RGB', (width, height), 'white')
+    draw = ImageDraw.Draw(image)
+
+    # Try to use a nice font, fallback to default
+    try:
+        font_title = ImageFont.truetype("arial.ttf", 32)
+        font_header = ImageFont.truetype("arial.ttf", 24)
+        font_text = ImageFont.truetype("arial.ttf", 18)
+    except:
+        font_title = ImageFont.load_default()
+        font_header = ImageFont.load_default()
+        font_text = ImageFont.load_default()
+
+    # Title
+    draw.text((width//2 - 150, 30), "FC CHAMPIONS - GAME SCHEDULE", fill='black', font=font_title)
+
+    # Schedule data (example)
+    schedule = [
+        ("Date", "Opponent", "Venue", "Time"),
+        ("Mar 15, 2025", "City Rangers", "Home", "15:00"),
+        ("Mar 22, 2025", "United FC", "Away", "17:30"),
+        ("Mar 29, 2025", "Thunderbolts", "Home", "14:00"),
+        ("Apr 5, 2025", "Legends FC", "Away", "16:00"),
+        ("Apr 12, 2025", "Phoenix United", "Home", "15:00"),
+        ("Apr 19, 2025", "Royal Kings", "Away", "18:00"),
+    ]
+
+    # Draw table
+    y_start = 120
+    row_height = 45
+    col_widths = [150, 200, 150, 100]
+    x_positions = [50, 200, 400, 550]
+
+    # Header background
+    for i, col in enumerate(schedule[0]):
+        draw.rectangle([x_positions[i], y_start, x_positions[i] + col_widths[i], y_start + row_height], fill='lightgray', outline='black')
+        draw.text((x_positions[i] + 10, y_start + 10), col, fill='black', font=font_header)
+
+    # Rows
+    y = y_start + row_height
+    for row in schedule[1:]:
+        for i, cell in enumerate(row):
+            draw.rectangle([x_positions[i], y, x_positions[i] + col_widths[i], y + row_height], fill='white', outline='black')
+            draw.text((x_positions[i] + 10, y + 10), cell, fill='black', font=font_text)
+        y += row_height
+
+    # Footer
+    draw.text((50, height - 40), "* All times local. Home games at Champions Stadium. Tickets at gate.", fill='gray', font=font_text)
+
+    # Save image
+    static_dir = 'static'
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+
+    img_path = os.path.join(static_dir, 'schedule.png')
+    image.save(img_path)
+    return img_path
+
+if __name__ == '__main__':
+    generate_schedule_image()
+
+5. Templates
+templates/index.html (Public News Feed)
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Champions - News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ FC Champions</h1>
+            <nav>
+                <a href="/">News</a>
+                <a href="/schedule">Schedule</a>
+                {% if session.member_id %}
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/logout">Logout ({{ session.username }})</a>
+                {% else %}
+                    <a href="/login">Member Login</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <main>
+            <h2>Latest News</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            {% for post in posts %}
+                <div class="news-post">
+                    <h3>{{ post.title }}</h3>
+                    <small>Posted by {{ post.username }} on {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    <p>{{ post.content }}</p>
+                </div>
+            {% else %}
+                <p>No news posts yet. Members can log in to post updates.</p>
+            {% endfor %}
+        </main>
+
+        <footer>
+            <p>&copy; 2025 FC Champions. All rights reserved.</p>
+            <a href="/download_schedule" class="btn">📅 Download Schedule (PNG)</a>
+        </footer>
+    </div>
+</body>
+</html>
+
+templates/login.html
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Member Login - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 Member Login</h1>
+            <nav><a href="/">← Back to News</a></nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" class="form">
+                <label>Username:</label>
+                <input type="text" name="username" required>
+                <label>Password:</label>
+                <input type="password" name="password" required>
+                <button type="submit" class="btn">Login</button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
+
+templates/dashboard.html
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Member Dashboard - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Member Dashboard</h1>
+            <nav>
+                <a href="/">News</a>
+                <a href="/add_post">+ New Post</a>
+                <a href="/logout">Logout</a>
+            </nav>
+        </header>
+
+        <main>
+            <h2>Your Posts</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            {% for post in posts %}
+                <div class="news-post">
+                    <h3>{{ post.title }}</h3>
+                    <small>Posted on {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    <p>{{ post.content }}</p>
+                    <a href="/delete_post/{{ post.id }}" class="btn-small" onclick="return confirm('Delete this post?')">Delete</a>
+                </div>
+            {% else %}
+                <p>You haven't posted any news yet. <a href="/add_post">Create your first post →</a></p>
+            {% endfor %}
+        </main>
+    </div>
+</body>
+</html>
+
+templates/add_post.html
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add News Post - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✍️ Create News Post</h1>
+            <nav><a href="/dashboard">← Dashboard</a></nav>
+        </header>
+
+        <main>
+            <form method="POST" class="form">
+                <label>Title:</label>
+                <input type="text" name="title" required>
+                <label>Content:</label>
+                <textarea name="content" rows="6" required></textarea>
+                <button type="submit" class="btn">Publish Post</button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
+
+templates/schedule.html
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Schedule - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Game Schedule</h1>
+            <nav><a href="/">← Back to News</a></nav>
+        </header>
+
+        <main>
+            <div class="schedule-preview">
+                <img src="{{ url_for('static', filename='schedule.png') }}" alt="Game Schedule" style="max-width:100%; border:1px solid #ccc;">
+                <p><a href="/download_schedule" class="btn">⬇ Download as PNG</a></p>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
+6. CSS Styling (static/style.css)
+css
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    min-height: 100vh;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+header {
+    background: #2c3e50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+nav {
+    margin-top: 15px;
+}
+
+nav a {
+    color: white;
+    margin: 0 15px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    padding: 30px;
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    border-bottom: 2px solid #e74c3c;
+    display: inline-block;
+}
+
+.news-post {
+    background: #f9f9f9;
+    border-left: 4px solid #e74c3c;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+.news-post h3 {
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.news-post small {
+    color: #777;
+    font-size: 12px;
+}
+
+.news-post p {
+    margin-top: 10px;
+}
+
+.alert {
+    padding: 10px;
+    margin: 15px 0;
+    border-radius: 3px;
+}
+
+.alert.success { background: #d4edda; color: #155724; }
+.alert.danger { background: #f8d7da; color: #721c24; }
+.alert.warning { background: #fff3cd; color: #856404; }
+.alert.info { background: #d1ecf1; color: #0c5460; }
+
+.form label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.form input, .form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.btn {
+    display: inline-block;
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.btn:hover {
+    background: #c0392b;
+}
+
+.btn-small {
+    display: inline-block;
+    background: #95a5a6;
+    color: white;
+    padding: 5px 10px;
+    margin-top: 10px;
+    font-size: 12px;
+    text-decoration: none;
+    border-radius: 3px;
+}
+
+footer {
+    background: #ecf0f1;
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.schedule-preview {
+    text-align: center;
+}
+
+7. Requirements (requirements.txt)
+text
+
+Flask==2.3.3
+mysql-connector-python==8.1.0
+Werkzeug==2.3.7
+Pillow==10.0.1
+
+8. Deployment Instructions
+Step 1: Setup MySQL
+bash
+
+mysql -u root -p < database.sql
+
+Update config.py with your MySQL password.
+Step 2: Generate password hash for first member
+bash
+
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('club123'))"
+
+Copy the output and replace the placeholder hash in database.sql before importing.
+Step 3: Install dependencies
+bash
+
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+Step 4: Run the app
+bash
+
+python app.py
+
+Step 5: Access website
+
+    Public news: http://localhost:5000/
+
+    Member login: http://localhost:5000/login (username: manager, password: club123)
+
+    Download schedule PNG: http://localhost:5000/download_schedule
+
+Features Summary
+
+✅ Member-only posting – Only logged-in members can add news posts
+✅ Public news feed – Everyone can read news
+✅ Schedule PNG download – Anyone can download game schedule as PNG
+✅ User authentication – Secure login with hashed passwords
+✅ Post management – Members can delete their own posts (admins can delete any)
+✅ Responsive design – Works on desktop and mobile
+✅ MySQL storage – All posts and members stored persistently
+
+The website is ready to deploy on any VPS (DigitalOcean, AWS EC2) or Python-hosting platform like PythonAnywhere (with MySQL add-on).

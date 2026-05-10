@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Home - News & Schedule{% endblock %}
+{% block content %}
+    <div class="two-columns">
+        <div class="news-feed">
+            <h2>📰 Latest Club News</h2>
+            {% for post in posts %}
+                <div class="news-post">
+                    <h3>{{ post.title }}</h3>
+                    <p class="meta">By {{ post.username }} on {{ post.created_at.strftime('%Y-%m-%d') }}</p>
+                    <p>{{ post.content }}</p>
+                </div>
+            {% else %}
+                <p>No news yet. Members can post updates.</p>
+            {% endfor %}
+        </div>
+        
+        <div class="schedule-sidebar">
+            <h2>📅 Upcoming Matches</h2>
+            <a href="/schedule.png" class="download-btn">Download PNG Schedule</a>
+            <table class="schedule-table">
+                <tr><th>Date</th><th>Opponent</th><th>Location</th><th>H/A</th></tr>
+                {% for match in schedule %}
+                <tr>
+                    <td>{{ match.match_date }}</td>
+                    <td>{{ match.opponent }}</td>
+                    <td>{{ match.location }}</td>
+                    <td>{{ match.home_away }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

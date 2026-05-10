@@ -1,0 +1,156 @@
+Building a full-stack web application involves connecting a front-end interface, a back-end server, and a relational database. Since you're looking for a "from the ground up" approach using Python Flask and MySQL, we'll structure this into three parts: the database schema, the application logic, and the user interface.
+1. The Database Schema (MySQL)
+
+First, you need to set up your tables. We need a table for Members (to handle authentication) and a table for News (to store the posts).
+SQL
+
+CREATE DATABASE football_club;
+USE football_club;
+
+CREATE TABLE members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    is_member BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE news (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    author_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES members(id)
+);
+
+2. The Flask Application (app.py)
+
+This script handles the routing, database connection, and session management to ensure only logged-in members can post.
+
+    Note: You will need to install dependencies via pip install flask flask-mysqldb.
+
+Python
+
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask_mysqldb import MySQL
+import os
+
+app = Flask(__name__)
+app.secret_key = 'super_secret_key'
+
+# MySQL Configuration
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'yourpassword'
+app.config['MYSQL_DB'] = 'football_club'
+
+mysql = MySQL(app)
+
+# --- Routes ---
+
+@app.route('/')
+def index():
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT news.title, news.content, members.username, news.created_at FROM news JOIN members ON news.author_id = members.id ORDER BY news.created_at DESC")
+    all_news = cursor.fetchall()
+    return render_template('index.html', news=all_news)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        # In a real app, use password hashing (werkzeug.security)
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT id, username FROM members WHERE username = %s", [username])
+        user = cursor.fetchone()
+        if user:
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/post_news', methods=['POST'])
+def post_news():
+    if 'user_id' in session:
+        title = request.form['title']
+        content = request.form['content']
+        cursor = mysql.connection.cursor()
+        cursor.execute("INSERT INTO news (title, content, author_id) VALUES (%s, %s, %s)",
+                       (title, content, session['user_id']))
+        mysql.connection.commit()
+    return redirect(url_for('index'))
+
+@app.route('/download-schedule')
+def download_schedule():
+    # Place 'schedule.png' inside a folder named 'static'
+    return send_from_directory(directory='static', path='schedule.png', as_attachment=True)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+3. The Frontend (HTML)
+
+Flask looks for files in a folder named templates. Create a file named index.html.
+HTML
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>FC United | Official Site</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        {% if session['username'] %}
+            <span>Welcome, {{ session['username'] }}</span> | <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Member Login</a>
+        {% endif %}
+        | <a href="/download-schedule" style="color: gold;">Download Game Schedule (PNG)</a>
+    </nav>
+
+    <hr>
+
+    <h2>Club News Feed</h2>
+
+    {% if session['user_id'] %}
+    <fieldset>
+        <legend>Post an Update</legend>
+        <form action="/post_news" method="POST">
+            <input type="text" name="title" placeholder="News Title" required><br>
+            <textarea name="content" placeholder="What's happening in the club?" required></textarea><br>
+            <button type="submit">Post to Feed</button>
+        </form>
+    </fieldset>
+    {% endif %}
+
+    <div id="feed">
+        {% for item in news %}
+            <article>
+                <h3>{{ item[0] }}</h3>
+                <small>By {{ item[2] }} on {{ item[3] }}</small>
+                <p>{{ item[1] }}</p>
+            </article>
+            <hr>
+        {% endfor %}
+    </div>
+</body>
+</html>
+
+How to Set This Up
+
+    Assets: Create a folder named static in your project directory and put your schedule.png image inside it.
+
+    Database: Run the SQL commands in your MySQL workbench or terminal.
+
+    Security Note: For a production app, never store passwords as plain text. Use werkzeug.security.generate_password_hash to encrypt them before saving to the database.
+
+    Run: Execute python app.py and visit [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+This setup creates a hard wall: the general public can see the news and download the image, but the "Post" form only renders if a user_id is present in the browser session.

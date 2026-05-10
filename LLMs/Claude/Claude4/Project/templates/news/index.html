@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}News — FC Ironclad{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <h1 class="page-title">Club News</h1>
+    <p class="page-sub">Latest updates from inside the squad</p>
+  </div>
+</section>
+
+<section class="section container">
+  {# Category filter #}
+  <div class="filter-bar">
+    <a href="{{ url_for('news.index') }}"
+       class="filter-btn {% if not active_category %}active{% endif %}">All</a>
+    {% for cat in categories %}
+    <a href="{{ url_for('news.index', category=cat) }}"
+       class="filter-btn {% if active_category == cat %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('news.create') }}" class="btn btn-sm btn-green" style="margin-left:auto">+ New Post</a>
+    {% endif %}
+  </div>
+
+  {# Post grid #}
+  <div class="card-grid">
+    {% for post in posts %}
+    <article class="card {% if post.pinned %}card-pinned{% endif %}">
+      {% if post.pinned %}<span class="pin-label">📌 Pinned</span>{% endif %}
+      <div class="card-meta">
+        <span class="badge badge-{{ post.category|lower|replace(' ','-') }}">{{ post.category }}</span>
+        <span class="card-date">{{ post.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+      <h3><a href="{{ url_for('news.detail', post_id=post.id) }}">{{ post.title }}</a></h3>
+      <p class="card-excerpt">{{ post.body[:180] }}{% if post.body|length > 180 %}…{% endif %}</p>
+      <div class="card-footer">
+        <span class="card-author">✍ {{ post.author.display_name }}</span>
+        <a href="{{ url_for('news.detail', post_id=post.id) }}" class="read-more">Read more →</a>
+      </div>
+    </article>
+    {% else %}
+    <div class="empty-state">
+      <p>No posts yet{% if active_category %} in <strong>{{ active_category }}</strong>{% endif %}.</p>
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('news.create') }}" class="btn btn-green">Write the first one</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="pagination">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('news.index', page=pagination.prev_num, category=active_category) }}" class="page-btn">← Prev</a>
+    {% endif %}
+    {% for p in pagination.iter_pages() %}
+      {% if p %}
+        <a href="{{ url_for('news.index', page=p, category=active_category) }}"
+           class="page-btn {% if p == pagination.page %}page-btn-active{% endif %}">{{ p }}</a>
+      {% else %}
+        <span class="page-ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+      <a href="{{ url_for('news.index', page=pagination.next_num, category=active_category) }}" class="page-btn">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

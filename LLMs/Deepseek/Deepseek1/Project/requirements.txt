@@ -1,5 +1,6 @@
-Flask==2.3.3
-Flask-Login==0.6.2
-mysql-connector-python==8.1.0
-python-dotenv==1.0.0
-Pillow==10.0.0
+Flask
+Flask-Login
+mysql-connector-python
+python-dotenv
+Pillow
+werkzeug

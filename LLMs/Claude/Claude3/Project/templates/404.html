@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}404 — FC Ironwall{% endblock %}
+
+{% block content %}
+<div style="text-align:center;padding:80px 20px">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:120px;color:var(--red);line-height:1;opacity:.6">404</div>
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;margin-bottom:16px">Page Not Found</h2>
+    <p style="color:var(--grey);margin-bottom:32px">The page you're looking for has been red-carded off the pitch.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}

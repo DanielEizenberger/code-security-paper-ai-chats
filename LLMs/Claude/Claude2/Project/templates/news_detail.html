@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} – FC Irongate{% endblock %}
+{% block content %}
+<div class="container">
+  <p style="color:var(--muted); font-size:.88rem; margin-bottom:18px;">
+    <a href="{{ url_for('index') }}" style="color:var(--gold)">← Back to news</a>
+  </p>
+  <div class="post-detail">
+    <div class="post-header">
+      <div class="cat">{{ post.category }}</div>
+      <h1>{{ post.title }}</h1>
+      <div class="post-meta">
+        <span>By {{ post.author_name }}</span>
+        <span>·</span>
+        <span>{{ post.created_at[:10] }}</span>
+      </div>
+    </div>
+    <div class="post-body">{{ post.body }}</div>
+    {% if session.user_id and (session.user_id == post.author_id or user.role == 'admin') %}
+    <div class="post-actions">
+      <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}"
+            onsubmit="return confirm('Delete this post?')">
+        <button type="submit" class="btn-delete">🗑 Delete Post</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

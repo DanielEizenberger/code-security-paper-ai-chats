@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}FC Ironwall — Home{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .hero {
+        position: relative;
+        background: linear-gradient(135deg, #0a1432 0%, #1a2f70 50%, #0d0d2e 100%);
+        border-radius: 14px;
+        overflow: hidden;
+        padding: 80px 56px;
+        margin-bottom: 60px;
+        border: 1px solid var(--border);
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 60% 80% at 85% 50%, rgba(220,50,50,.18) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 60% at 10% 80%, rgba(212,175,55,.10) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .hero-eyebrow {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 16px;
+    }
+
+    .hero-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: clamp(52px, 8vw, 96px);
+        line-height: 0.95;
+        color: var(--white);
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    .hero-title .red { color: var(--red); }
+
+    .hero-desc {
+        max-width: 520px;
+        font-size: 17px;
+        color: var(--off-white);
+        line-height: 1.7;
+        margin-bottom: 36px;
+        opacity: .85;
+    }
+
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    .hero-badge {
+        position: absolute;
+        right: 56px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--red) 0%, #7a1010 100%);
+        border: 4px solid var(--gold);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 60px rgba(220,50,50,.4);
+    }
+
+    .hero-badge-text {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 34px;
+        color: white;
+        letter-spacing: 2px;
+        line-height: 1;
+    }
+
+    .hero-badge-sub {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: var(--gold);
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
+
+    /* Section */
+    .section-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 36px;
+        letter-spacing: 2px;
+        color: var(--white);
+        margin-bottom: 4px;
+    }
+
+    .section-title span { color: var(--red); }
+
+    .section-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* News grid */
+    .news-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .news-card {
+        background: var(--navy2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: border-color .2s, transform .2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .news-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: var(--red);
+        opacity: 0;
+        transition: opacity .2s;
+    }
+
+    .news-card:hover { border-color: rgba(220,50,50,.4); transform: translateY(-2px); }
+    .news-card:hover::before { opacity: 1; }
+
+    .news-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--grey);
+    }
+
+    .news-card-title {
+        font-family: 'Barlow', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--white);
+        line-height: 1.35;
+    }
+
+    .news-card-title a { color: inherit; text-decoration: none; }
+    .news-card-title a:hover { color: var(--gold); }
+
+    .news-card-excerpt {
+        color: var(--grey);
+        font-size: 14px;
+        line-height: 1.65;
+        flex: 1;
+    }
+
+    .news-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--grey);
+    }
+
+    /* Quick stats bar */
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 56px;
+    }
+
+    .stat-card {
+        background: var(--navy2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 24px 20px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 44px;
+        color: var(--gold);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--grey);
+        margin-top: 4px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--grey);
+    }
+
+    .empty-state p { margin-bottom: 16px; }
+
+    @media (max-width: 768px) {
+        .hero { padding: 50px 28px; }
+        .hero-badge { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-eyebrow">Est. 1987 · Ironwall, Austria</div>
+    <h1 class="hero-title">
+        BUILT<br>TO <span class="red">WIN.</span>
+    </h1>
+    <p class="hero-desc">
+        FC Ironwall — where passion meets precision. Follow our journey, catch the latest news from the dressing room, and never miss a fixture.
+    </p>
+    <div class="hero-actions">
+        <a href="{{ url_for('news') }}" class="btn btn-primary">Latest News</a>
+        <a href="{{ url_for('schedule') }}" class="btn btn-gold">View Schedule</a>
+    </div>
+    <div class="hero-badge">
+        <div class="hero-badge-text">FCI</div>
+        <div class="hero-badge-sub">Ironwall</div>
+    </div>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+    <div class="stat-card">
+        <div class="stat-value">{{ posts|length }}</div>
+        <div class="stat-label">News Posts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Fixtures</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">1987</div>
+        <div class="stat-label">Founded</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Division</div>
+    </div>
+</div>
+
+<!-- News -->
+<div class="section-header">
+    <div>
+        <div class="section-title">Latest <span>News</span></div>
+        <p style="color:var(--grey);font-size:14px;margin-top:4px;">Updates from the club</p>
+    </div>
+    <a href="{{ url_for('news') }}" class="btn btn-outline btn-sm">All Posts →</a>
+</div>
+
+{% if posts %}
+<div class="news-grid">
+    {% for post in posts %}
+    <article class="news-card">
+        <div class="news-card-meta">
+            <span class="badge badge-{{ post.category|lower|replace(' ','-') }}">{{ post.category }}</span>
+            <span>{{ post.created_at.strftime('%d %b %Y') }}</span>
+        </div>
+        <div class="news-card-title">
+            <a href="{{ url_for('view_post', post_id=post.id) }}">{{ post.title }}</a>
+        </div>
+        <div class="news-card-excerpt">
+            {{ post.content[:160] }}{% if post.content|length > 160 %}…{% endif %}
+        </div>
+        <div class="news-card-footer">
+            <span>By {{ post.author_name }}</span>
+            <a href="{{ url_for('view_post', post_id=post.id) }}" class="btn btn-outline btn-sm">Read →</a>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No posts yet. Club members can post the first update!</p>
+    {% if not session.get('member_id') %}
+    <a href="{{ url_for('login') }}" class="btn btn-outline">Log In</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

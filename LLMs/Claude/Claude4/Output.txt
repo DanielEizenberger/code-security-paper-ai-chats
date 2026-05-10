@@ -1,0 +1,37 @@
+Now I have a clear picture. Let me build this full-stack football club website. This is a substantial project — I'll create all files systematically.10 Dateien erstellt, 2 Befehle ausgeführt10 Dateien erstellt, 2 Befehle ausgeführtNow let's build all the HTML templates:11 Dateien erstellt, hat einen Befehl ausgeführt11 Dateien erstellt, hat einen Befehl ausgeführtNow the CSS — the most important visual layer:2 Dateien erstellt2 Dateien erstelltNow add the nl2br filter and a custom Jinja filter to the app:4 Dateien erstellt, hat eine Datei bearbeitet4 Dateien erstellt, hat eine Datei bearbeitetNow let's verify the whole project structure looks correct:2 Befehle ausgeführt2 Befehle ausgeführtAll Python syntax is clean. Now let's zip and deliver:2 Befehle ausgeführt, datei lesen2 Befehle ausgeführt, datei lesenHere's your complete FC Ironclad website — all syntax-verified and ready to deploy. Here's exactly what's inside:
+
+What's in the ZIP
+27 files across the full stack:
+Backend (app.py, models.py, routes/, schedule_image.py)
+
+app.py — Flask app factory, extension wiring, DB auto-creation, schedule seeding
+models.py — 3 SQLAlchemy models: Member, NewsPost, ScheduleMatch
+routes/auth.py — register, login, logout, member list (admin), activate/deactivate/promote
+routes/news.py — list, detail, create, edit, delete posts (with auth guards)
+routes/schedule.py — view fixtures, PNG download (public), admin manage
+schedule_image.py — Pillow-based PNG renderer with a dark stadium aesthetic, styled columns, Home/Away colour pills, result scores
+
+Templates (Jinja2)
+
+Dark editorial design using Bebas Neue display font + DM Sans body
+Sticky navbar, scroll-reveal animations, mobile responsive
+Category filter bar on news feed, paginated posts, pinned posts
+Full admin table for members and schedule management
+
+Database
+
+MySQL 8 with utf8mb4 collation
+10 sample fixtures auto-seeded on first run
+First registered user becomes admin automatically
+
+
+Deploy in 2 commands (Docker)
+bashcd football_club
+docker compose up --build
+# → http://localhost:5000
+Manual setup
+bashmysql -u root -p < setup_db.sql   # create DB + user
+cp .env.example .env              # fill in credentials
+pip install -r requirements.txt
+flask run
+The schedule PNG download at /schedule/download is fully public — no login needed — and renders a styled 880px wide image with all fixtures, colour-coded venues, competition badges, and results.

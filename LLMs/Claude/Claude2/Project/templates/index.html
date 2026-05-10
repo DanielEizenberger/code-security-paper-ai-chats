@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}FC Irongate – News{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <div class="hero-title">FC <em>IRONGATE</em></div>
+  <div class="hero-sub">Official Club Website · Season 2025/2026</div>
+  <div class="hero-actions">
+    <a href="{{ url_for('schedule') }}" class="btn-hero-primary">View Schedule</a>
+    {% if not session.user_id %}
+    <a href="{{ url_for('register') }}" class="btn-hero-outline">Join the Club</a>
+    {% else %}
+    <a href="{{ url_for('new_post') }}" class="btn-hero-outline">Post News</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="container">
+  <div class="section-head">
+    <h2>LATEST <span>NEWS</span></h2>
+    {% if session.user_id %}
+    <a href="{{ url_for('new_post') }}">+ Write a post</a>
+    {% endif %}
+  </div>
+
+  {% if posts %}
+  <div class="news-grid">
+    {% for post in posts %}
+    <div class="news-card">
+      <div class="card-stripe"></div>
+      <div class="card-body">
+        <div class="card-cat">{{ post.category }}</div>
+        <div class="card-title">{{ post.title }}</div>
+        <div class="card-excerpt">{{ post.body[:160] }}{% if post.body|length > 160 %}…{% endif %}</div>
+        <div class="card-meta">
+          <span>{{ post.author_name }}</span>
+          <span class="dot">●</span>
+          <span>{{ post.created_at[:10] }}</span>
+        </div>
+      </div>
+      <div class="card-link">
+        <a href="{{ url_for('news_detail', post_id=post.id) }}">Read more →</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted); text-align:center; padding: 60px 0;">
+    No news yet. Members can post updates above.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

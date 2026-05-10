@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h3>Club News Feed</h3>
+        <hr>
+        {% if current_user.is_authenticated %}
+        <form action="/post" method="POST" class="mb-4">
+            <textarea name="content" class="form-control" placeholder="Share club updates..." required></textarea>
+            <button type="submit" class="btn btn-success mt-2">Post Update</button>
+        </form>
+        {% endif %}
+
+        {% for post in posts %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <p class="card-text">{{ post.content }}</p>
+                <small class="text-muted">Posted by {{ post.author }} on {{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title">Match Schedule</h5>
+                <p>Download the latest 2026 season PNG</p>
+                <a href="/download-schedule" class="btn btn-primary">Download Schedule</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

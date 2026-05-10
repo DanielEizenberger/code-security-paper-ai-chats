@@ -1,0 +1,6 @@
+Flask
+flask-mysql-connector
+mysql-connector-python
+Pillow
+Flask-Session
+Werkzeug

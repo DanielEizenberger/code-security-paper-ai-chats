@@ -1,0 +1,32 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="row align-items-center" style="min-height: 70vh;">
+    <div class="col-md-6 text-white">
+        <h1 class="display-3 fw-bold">FC CHAMPIONS</h1>
+        <p class="lead">Est. 1985 - A legacy of excellence and community spirit.</p>
+        <p>Join our family of dedicated players and fans. Members get exclusive access to post updates and news.</p>
+        <a href="{{ url_for('schedule_download') }}" class="schedule-btn text-decoration-none d-inline-block mt-3">
+            📅 DOWNLOAD FULL SCHEDULE (PNG)
+        </a>
+        <div class="mt-4">
+            {% if not session.member_id %}
+                <a href="{{ url_for('register') }}" class="btn btn-gold me-2">Become a Member</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-light">Member Login</a>
+            {% else %}
+                <a href="{{ url_for('news_feed') }}" class="btn btn-gold">Go to Members' News Feed</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-white p-4">
+            <h3>Upcoming Match</h3>
+            <h2 class="text-warning">Home vs City Rivals</h2>
+            <p>📅 May 15, 2026 | 🕖 7:00 PM | 🏟️ Main Stadium</p>
+            <hr>
+            <p class="small">Tickets available at the gate. Members get 20% discount!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

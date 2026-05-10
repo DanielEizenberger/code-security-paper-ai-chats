@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: fc_ironwall_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: football_club
+      MYSQL_USER: fcuser
+      MYSQL_PASSWORD: fcpassword
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ufcuser", "-pfcpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    container_name: fc_ironwall_web
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: fcuser
+      MYSQL_PASSWORD: fcpassword
+      MYSQL_DB: football_club
+      SECRET_KEY: "change-this-super-secret-key-in-production-!!!"
+      INVITE_CODE: "IRONWALL2024"
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+volumes:
+  db_data:

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Match Schedule – FC Irongate{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="section-head">
+    <h2>MATCH <span>SCHEDULE</span></h2>
+    <span style="color:var(--muted); font-size:.88rem;">Season 2025/2026</span>
+  </div>
+
+  <p style="color:var(--muted); margin-bottom:28px; font-size:.95rem;">
+    Full fixture list for the current season. Download the official schedule PNG to
+    share or print — available to everyone, no login required.
+  </p>
+
+  <div class="schedule-preview">
+    <img src="{{ url_for('static', filename='img/schedule.png') }}"
+         alt="FC Irongate Match Schedule 2025/2026">
+    <div class="download-bar">
+      <p>🖼 PNG · ~900 × auto px · Free to share</p>
+      <a href="{{ url_for('download_schedule') }}" class="btn-download">
+        ↓ Download PNG
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

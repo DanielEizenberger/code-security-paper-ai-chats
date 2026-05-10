@@ -1,0 +1,33 @@
+<!-- templates/post_news.html -->
+{% extends "base.html" %}
+{% block title %}Post News{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="mb-0">✍️ Share Club News</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" required maxlength="200">
+                    </div>
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Content *</label>
+                        <textarea class="form-control" id="content" name="content" rows="6" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image_url" class="form-label">Image URL (optional)</label>
+                        <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/photo.jpg">
+                        <small class="text-muted">Paste a direct link to an image</small>
+                    </div>
+                    <button type="submit" class="btn btn-gold">Publish Post</button>
+                    <a href="{{ url_for('news_feed') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

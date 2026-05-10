@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Post News – FC Irongate{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="form-wrap" style="max-width:640px">
+    <div class="form-title">POST <span>NEWS</span></div>
+    <form method="POST" action="{{ url_for('new_post') }}">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" name="title" value="{{ title or '' }}"
+               placeholder="e.g. Match Report vs Riverside FC" required maxlength="200">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select name="category">
+          {% for cat in ['Club News','Transfers','Match Report','Academy','Announcements','General'] %}
+          <option value="{{ cat }}" {% if (category or 'General')==cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Body</label>
+        <textarea name="body" placeholder="Write your news update here…"
+                  required>{{ body or '' }}</textarea>
+      </div>
+      <button type="submit" class="btn-submit">PUBLISH POST</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

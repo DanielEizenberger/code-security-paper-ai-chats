@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: football_club_db
+      MYSQL_USER: football_user
+      MYSQL_PASSWORD: football_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: "change-this-in-production-use-a-long-random-string"
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_USER: football_user
+      MYSQL_PASSWORD: football_password
+      MYSQL_DB: football_club_db
+
+volumes:
+  mysql_data:

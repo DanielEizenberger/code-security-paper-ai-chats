@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+WTForms
+PyMySQL
+python-dotenv
+gunicorn
+bcrypt

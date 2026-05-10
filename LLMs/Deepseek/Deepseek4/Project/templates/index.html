@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Champions - News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ FC Champions</h1>
+            <nav>
+                <a href="/">News</a>
+                <a href="/schedule">Schedule</a>
+                {% if session.member_id %}
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/logout">Logout ({{ session.username }})</a>
+                {% else %}
+                    <a href="/login">Member Login</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <main>
+            <h2>Latest News</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            {% for post in posts %}
+                <div class="news-post">
+                    <h3>{{ post.title }}</h3>
+                    <small>Posted by {{ post.username }} on {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    <p>{{ post.content }}</p>
+                </div>
+            {% else %}
+                <p>No news posts yet. Members can log in to post updates.</p>
+            {% endfor %}
+        </main>
+
+        <footer>
+            <p>&copy; 2025 FC Champions. All rights reserved.</p>
+            <a href="/download_schedule" class="btn">📅 Download Schedule (PNG)</a>
+        </footer>
+    </div>
+</body>
+</html>

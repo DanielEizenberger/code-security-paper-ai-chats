@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }} — FC Ironclad{% endblock %}
+{% block content %}
+<section class="section container-narrow">
+  <div class="post-nav">
+    <a href="{{ url_for('news.index') }}" class="back-link">← Back to News</a>
+    {% if current_user.is_authenticated and (current_user.id == post.author_id or current_user.is_admin) %}
+    <div class="post-actions">
+      <a href="{{ url_for('news.edit', post_id=post.id) }}" class="btn btn-sm btn-outline">Edit</a>
+      <form method="POST" action="{{ url_for('news.delete', post_id=post.id) }}"
+            onsubmit="return confirm('Delete this post?');" style="display:inline">
+        <button class="btn btn-sm btn-danger">Delete</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <article class="post-full">
+    <header class="post-header">
+      {% if post.pinned %}<span class="pin-label">📌 Pinned</span>{% endif %}
+      <div class="card-meta">
+        <span class="badge badge-{{ post.category|lower|replace(' ','-') }}">{{ post.category }}</span>
+        <span class="card-date">{{ post.created_at.strftime('%d %B %Y, %H:%M') }}</span>
+      </div>
+      <h1 class="post-title">{{ post.title }}</h1>
+      <p class="post-byline">
+        By <strong>{{ post.author.display_name }}</strong>
+        {% if post.updated_at and post.updated_at != post.created_at %}
+          · Updated {{ post.updated_at.strftime('%d %b %Y') }}
+        {% endif %}
+      </p>
+    </header>
+    <div class="post-body">{{ post.body | nl2br }}</div>
+  </article>
+</section>
+{% endblock %}

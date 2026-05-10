@@ -1,0 +1,52 @@
+<!-- templates/news_feed.html -->
+{% extends "base.html" %}
+{% block title %}News Feed{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-white">⚽ Club News Feed</h2>
+    {% if session.member_id %}
+        <a href="{{ url_for('post_news') }}" class="btn btn-gold">+ Write New Post</a>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% if posts %}
+        {% for post in posts %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card news-card">
+                {% if post.image_url %}
+                    <img src="{{ post.image_url }}" class="card-img-top" alt="Post image" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <span>⚽ No image</span>
+                    </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <p class="card-text">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
+                    <small class="text-muted">
+                        Posted by <strong>{{ post.username }}</strong> on {{ post.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </small>
+                    <div class="mt-2">
+                        {% if session.is_admin %}
+                            <a href="{{ url_for('delete_post', post_id=post.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete this post?')">Delete</a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#post-{{ post.id }}">Read More</button>
+                    </div>
+                    <div id="post-{{ post.id }}" class="collapse mt-2">
+                        <hr>
+                        {{ post.content }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                No news posts yet. {% if session.member_id %}Be the first to post an update!{% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

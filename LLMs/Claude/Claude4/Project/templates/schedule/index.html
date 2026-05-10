@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Schedule — FC Ironclad{% endblock %}
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <h1 class="page-title">2025 Season Schedule</h1>
+    <p class="page-sub">All fixtures — home and away</p>
+    <div style="display:flex;gap:1rem;margin-top:1.5rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('schedule.download') }}" class="btn btn-green btn-lg">⬇ Download PNG</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('schedule.manage') }}" class="btn btn-outline btn-lg">⚙ Manage Fixtures</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section container">
+  <div class="table-wrapper">
+    <table class="data-table schedule-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Opponent</th>
+          <th>Venue</th>
+          <th>Competition</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in matches %}
+        <tr class="{{ 'past-match' if m.result else 'upcoming-match' }}">
+          <td class="mono">{{ m.date }}</td>
+          <td class="mono">{{ m.time }}</td>
+          <td><strong>FC Ironclad vs {{ m.opponent }}</strong></td>
+          <td>
+            <span class="ha-badge ha-{{ m.location|lower }}">{{ m.location }}</span>
+          </td>
+          <td>
+            <span class="comp-badge">{{ m.competition }}</span>
+          </td>
+          <td class="result-cell">
+            {% if m.result %}
+              <span class="result-score">{{ m.result }}</span>
+            {% else %}
+              <span class="text-grey">TBD</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-state">No fixtures scheduled yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

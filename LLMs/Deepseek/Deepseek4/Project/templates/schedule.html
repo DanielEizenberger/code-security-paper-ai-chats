@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Schedule - FC Champions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Game Schedule</h1>
+            <nav><a href="/">← Back to News</a></nav>
+        </header>
+
+        <main>
+            <div class="schedule-preview">
+                <img src="{{ url_for('static', filename='schedule.png') }}" alt="Game Schedule" style="max-width:100%; border:1px solid #ccc;">
+                <p><a href="/download_schedule" class="btn">⬇ Download as PNG</a></p>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

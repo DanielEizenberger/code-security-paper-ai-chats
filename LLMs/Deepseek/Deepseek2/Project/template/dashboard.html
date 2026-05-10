@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Member Dashboard{% endblock %}
+{% block content %}
+    <h2>Welcome, {{ username }}! ✍️ Create a News Update</h2>
+    <form method="POST" action="/post" class="post-form">
+        <input type="text" name="title" placeholder="Post Title" required>
+        <textarea name="content" rows="4" placeholder="Write your update here..."></textarea>
+        <button type="submit">Publish to News Feed</button>
+    </form>
+    
+    <hr>
+    <h3>All Members' Posts</h3>
+    {% for post in posts %}
+        <div class="news-post">
+            <h3>{{ post.title }}</h3>
+            <p class="meta">By {{ post.username }} on {{ post.created_at.strftime('%Y-%m-%d') }}</p>
+            <p>{{ post.content }}</p>
+            {% if session.member_id == post.member_id or session.is_admin %}
+                <a href="/delete_post/{{ post.id }}" class="delete-btn" onclick="return confirm('Delete this post?')">🗑️ Delete</a>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endblock %}

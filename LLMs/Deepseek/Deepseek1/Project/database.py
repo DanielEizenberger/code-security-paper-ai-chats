@@ -8,10 +8,10 @@ load_dotenv()
 class Database:
     def __init__(self):
         self.config = {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'database': os.getenv('DB_NAME', 'football_club'),
-            'user': os.getenv('DB_USER', 'root'),
-            'password': os.getenv('DB_PASSWORD', ''),
+            'host': '127.0.0.1',
+            'database': 'football_club',
+            'user': 'root',
+            'password': '123',
             'autocommit': True
         }
     

@@ -1,0 +1,18 @@
+Reading frontend design skillReading frontend design skillNow let me build the complete Flask + MySQL football club website. This is a multi-file project, so I'll create everything systematically.4 Dateien erstellt4 Dateien erstelltNow let me create the base template and all HTML templates:15 Dateien erstellt, 2 Dateien bearbeitet15 Dateien erstellt, 2 Dateien bearbeitetNow let's create a comprehensive README and copy everything to outputs:2 Befehle ausgeführt, datei erstellt, datei lesen2 Befehle ausgeführt, datei erstellt, datei lesenHere's the complete FC Ironwall website — everything ready to deploy. Here's what's inside:
+
+📁 File Overview
+FilePurposeapp.pyFlask app — all routes, auth, session handlingschema.sqlMySQL schema + 10 sample fixtures auto-seededseed.pyCreates the admin account with a real hashed password + sample postsschedule_image.pyGenerates the downloadable PNG using Pillowtemplates/10 Jinja2 templates — full dark navy/red/gold designDockerfile + docker-compose.ymlOne-command deploymentREADME.mdFull setup guide
+
+🚀 Quickest way to run
+bashunzip fc_ironwall_website.zip && cd football_club
+docker compose up --build
+# → open http://localhost:5000
+Docker starts MySQL, waits for it to be healthy, runs the seed script, then starts Gunicorn.
+
+Key features implemented
+🔒 Auth system — invite-code gating on registration (set INVITE_CODE env var), werkzeug-hashed passwords, Flask session
+📰 News feed — full CRUD for posts with categories (Match Report, Announcement, Training…), client-side filtering; only members can post/delete their own posts
+🗓 Schedule PNG — GET /schedule/download serves a polished 1100px PNG generated with Pillow on every request, no auth required
+🗃 MySQL — two relational tables (members, posts) plus a matches table; proper foreign keys and ON DELETE CASCADE
+🎨 Design — Bebas Neue + Barlow typefaces, deep navy + red + gold palette, animated hover states, fully responsive
+Default login: admin@fcironwall.com / Admin1234! — change this after first deploy!

@@ -1,0 +1,194 @@
+Building a full-scale production website involves several moving parts. Below is a "ready-to-deploy" foundation using Flask (Python), Flask-SQLAlchemy (Database ORM), and Flask-Login (Authentication).
+1. Project Structure
+
+Create a folder for your project and set up the following hierarchy:
+Plaintext
+
+football_club/
+├── app.py              # Main application logic
+├── templates/          # HTML files
+│   ├── layout.html
+│   ├── index.html
+│   └── login.html
+├── static/             # Assets
+│   └── schedule.png    # Place your game schedule image here
+└── database.db         # Created automatically (SQLite for local, swap to MySQL for production)
+
+2. The Python Backend (app.py)
+
+This script handles the database schema, user sessions, and the news feed logic.
+
+    Note on MySQL: For local testing, I've used SQLite. To switch to MySQL, change the SQLALCHEMY_DATABASE_URI to:
+
+    mysql+pymysql://username:password@localhost/db_name
+
+Python
+
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from datetime import datetime
+import os
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_super_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///football_club.db'
+db = SQLAlchemy(app)
+
+# Authentication Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# --- Database Models ---
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False) # In production, use werkzeug.security to hash!
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(500), nullable=False)
+    author = db.Column(db.String(50), nullable=False)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# --- Routes ---
+
+@app.route('/')
+def index():
+    posts = Post.query.order_by(Post.date_posted.desc()).all()
+    return render_template('index.html', posts=posts)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = User.query.filter_by(username=request.form['username']).first()
+        if user and user.password == request.form['password']:
+            login_user(user)
+            return redirect(url_for('index'))
+        flash('Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/post', methods=['POST'])
+@login_required
+def post_news():
+    content = request.form.get('content')
+    if content:
+        new_post = Post(content=content, author=current_user.username)
+        db.session.add(new_post)
+        db.session.commit()
+    return redirect(url_for('index'))
+
+@app.route('/download-schedule')
+def download_schedule():
+    return send_from_directory('static', 'schedule.png', as_attachment=True)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        # Create a dummy member if none exists
+        if not User.query.filter_by(username='admin').first():
+            db.session.add(User(username='admin', password='password123'))
+            db.session.commit()
+    app.run(debug=True)
+
+3. The Frontend (Templates)
+
+templates/layout.html (The base wrapper):
+HTML
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FC United</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">FC United News</a>
+            <div>
+                {% if current_user.is_authenticated %}
+                    <span class="text-white me-3">Hi, {{ current_user.username }}</span>
+                    <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
+                {% else %}
+                    <a href="/login" class="btn btn-outline-primary btn-sm">Member Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+
+templates/index.html (The News Feed & Download):
+HTML
+
+{% extends "layout.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h3>Club News Feed</h3>
+        <hr>
+        {% if current_user.is_authenticated %}
+        <form action="/post" method="POST" class="mb-4">
+            <textarea name="content" class="form-control" placeholder="Share club updates..." required></textarea>
+            <button type="submit" class="btn btn-success mt-2">Post Update</button>
+        </form>
+        {% endif %}
+
+        {% for post in posts %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <p class="card-text">{{ post.content }}</p>
+                <small class="text-muted">Posted by {{ post.author }} on {{ post.date_posted.strftime('%Y-%m-%d') }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title">Match Schedule</h5>
+                <p>Download the latest 2026 season PNG</p>
+                <a href="/download-schedule" class="btn btn-primary">Download Schedule</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+4. How to Run & Deploy
+
+    Install Dependencies:
+    Bash
+
+    pip install flask flask-sqlalchemy flask-login pymysql
+
+    Add your Schedule: Place a file named schedule.png inside the static/ folder.
+
+    Run Locally: Execute python app.py.
+
+        Visit [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+        Log in with username admin and password password123 to post.
+
+    Production Readiness:
+
+        Security: Replace user.password == request.form['password'] with werkzeug.security.check_password_hash.
+
+        Environment: Use gunicorn or waitress to serve the app instead of the built-in Flask dev server.
+
+        MySQL: Ensure your MySQL server is running and update the SQLALCHEMY_DATABASE_URI string.

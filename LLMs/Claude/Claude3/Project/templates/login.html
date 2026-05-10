@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Member Login — FC Ironwall{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .auth-wrapper {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0 60px;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 440px;
+        background: var(--navy2);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--navy3), var(--navy));
+        padding: 36px 40px 28px;
+        border-bottom: 2px solid var(--red);
+        text-align: center;
+    }
+
+    .auth-crest {
+        width: 58px; height: 58px;
+        background: var(--red);
+        border-radius: 50%;
+        border: 2px solid var(--gold);
+        margin: 0 auto 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 20px;
+        color: white;
+    }
+
+    .auth-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 32px;
+        letter-spacing: 2px;
+        color: var(--white);
+    }
+
+    .auth-sub { color: var(--grey); font-size: 14px; margin-top: 4px; }
+
+    .auth-body { padding: 32px 40px; }
+
+    .auth-footer {
+        padding: 18px 40px 28px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        font-size: 14px;
+        color: var(--grey);
+    }
+
+    @media (max-width: 500px) {
+        .auth-body, .auth-header, .auth-footer { padding-left: 24px; padding-right: 24px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-crest">FCI</div>
+            <div class="auth-title">Member Login</div>
+            <div class="auth-sub">Sign in to post club updates</div>
+        </div>
+        <div class="auth-body">
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email"
+                           placeholder="you@example.com" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password"
+                           placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px">
+                    Sign In
+                </button>
+            </form>
+        </div>
+        <div class="auth-footer">
+            Not a member yet? <a href="{{ url_for('register') }}">Register with invite code</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Bcrypt
+PyMySQL
+python-dotenv
+Pillow
+gunicorn
+cryptography

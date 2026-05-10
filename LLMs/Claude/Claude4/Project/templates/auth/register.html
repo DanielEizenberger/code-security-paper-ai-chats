@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Join — FC Ironclad{% endblock %}
+{% block content %}
+<section class="auth-section">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icon">🏆</span>
+      <h1>Join the Club</h1>
+      <p>Become a member and post updates</p>
+    </div>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="POST" class="auth-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required
+                 value="{{ request.form.get('username', '') }}">
+        </div>
+        <div class="form-group">
+          <label for="display_name">Display Name</label>
+          <input type="text" id="display_name" name="display_name" required
+                 value="{{ request.form.get('display_name', '') }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" required
+               value="{{ request.form.get('email', '') }}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required minlength="8">
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirm Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+      </div>
+      <p class="form-hint">The first registered account becomes club admin.</p>
+      <button type="submit" class="btn btn-green btn-block">Create Account</button>
+    </form>
+    <p class="auth-footer">Already a member? <a href="{{ url_for('auth.login') }}">Sign in →</a></p>
+  </div>
+</section>
+{% endblock %}

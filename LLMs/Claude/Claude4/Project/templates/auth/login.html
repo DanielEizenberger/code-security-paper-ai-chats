@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Login — FC Ironclad{% endblock %}
+{% block content %}
+<section class="auth-section">
+  <div class="auth-card">
+    <div class="auth-header">
+      <span class="auth-icon">⚽</span>
+      <h1>Member Login</h1>
+      <p>Sign in to post club updates</p>
+    </div>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="POST" class="auth-form" novalidate>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required
+               value="{{ request.form.get('username', '') }}">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" name="remember"> Remember me
+      </label>
+      <button type="submit" class="btn btn-green btn-block">Sign In</button>
+    </form>
+    <p class="auth-footer">Not a member yet? <a href="{{ url_for('auth.register') }}">Join the club →</a></p>
+  </div>
+</section>
+{% endblock %}
