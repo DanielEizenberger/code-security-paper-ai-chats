@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}FC Ironclad – Match Schedule{% endblock %}
+
+{% block extra_head %}
+<style>
+.schedule-header {
+  padding: 48px 0 32px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  border-bottom: 1px solid var(--border); margin-bottom: 40px;
+}
+.schedule-header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 56px; text-transform: uppercase; line-height: 1;
+}
+.download-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 20px 24px; text-align: right;
+}
+.download-box p { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.fixture-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.fixture-table thead {
+  background: var(--surface2);
+}
+.fixture-table th {
+  padding: 12px 16px; text-align: left;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 12px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--gold);
+  border-bottom: 2px solid var(--accent);
+}
+.fixture-table td {
+  padding: 14px 16px;
+  font-size: 14px; color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.fixture-table tbody tr:last-child td { border-bottom: none; }
+.fixture-table tbody tr { transition: background .15s; }
+.fixture-table tbody tr:hover { background: var(--surface2); }
+
+.home-row { border-left: 3px solid var(--accent); }
+
+.team-name { font-weight: 500; }
+.team-name.our-team { color: white; font-weight: 600; }
+
+.competition-badge {
+  display: inline-block; padding: 2px 8px;
+  background: rgba(255,195,40,.1); color: var(--gold);
+  border: 1px solid rgba(255,195,40,.25);
+  border-radius: 2px; font-size: 11px; font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase;
+}
+.competition-badge.cup {
+  background: rgba(80,130,220,.1); color: #8ab4f8;
+  border-color: rgba(80,130,220,.25);
+}
+
+.result-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 16px; letter-spacing: .05em;
+}
+.result-win  { color: var(--win);  }
+.result-draw { color: var(--draw); }
+.result-loss { color: var(--loss); }
+.result-tbd  { color: var(--muted); font-size: 12px; letter-spacing: .1em; }
+
+.venue-text { color: var(--muted); font-size: 13px; }
+
+.stats-row {
+  display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap;
+}
+.stat-box {
+  flex: 1; min-width: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px; text-align: center;
+}
+.stat-box .num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 36px; line-height: 1;
+}
+.stat-box .lbl { font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; }
+.stat-win  .num { color: var(--win); }
+.stat-draw .num { color: var(--draw); }
+.stat-loss .num { color: var(--loss); }
+.stat-total .num { color: var(--gold); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="schedule-header">
+  <div>
+    <p class="text-muted" style="font-size:13px; letter-spacing:.15em; text-transform:uppercase; margin-bottom:8px;">Season 2025/26</p>
+    <h1>Match<br><span style="color:var(--accent)">Schedule</span></h1>
+  </div>
+  <div class="download-box">
+    <a href="/schedule/download" class="btn btn-gold">⬇ Download PNG</a>
+    <p>Free to download &amp; share — no login required</p>
+  </div>
+</div>
+
+{% set played = fixtures|selectattr('result')|list %}
+{% set wins   = [] %}
+{% set draws  = [] %}
+{% set losses = [] %}
+{% for f in played %}
+  {% set parts = f.result.split('-') %}
+  {% set is_home = f.home_team.upper().startswith('FC IRONCLAD') %}
+  {% set hg = parts[0]|int %}
+  {% set ag = parts[1]|int %}
+  {% set our = hg if is_home else ag %}
+  {% set opp = ag if is_home else hg %}
+  {% if our > opp %}{% set _ = wins.append(1) %}
+  {% elif our == opp %}{% set _ = draws.append(1) %}
+  {% else %}{% set _ = losses.append(1) %}
+  {% endif %}
+{% endfor %}
+
+<div class="stats-row">
+  <div class="stat-box stat-total">
+    <div class="num">{{ fixtures|length }}</div>
+    <div class="lbl">Fixtures</div>
+  </div>
+  <div class="stat-box stat-win">
+    <div class="num">{{ wins|length }}</div>
+    <div class="lbl">Wins</div>
+  </div>
+  <div class="stat-box stat-draw">
+    <div class="num">{{ draws|length }}</div>
+    <div class="lbl">Draws</div>
+  </div>
+  <div class="stat-box stat-loss">
+    <div class="num">{{ losses|length }}</div>
+    <div class="lbl">Losses</div>
+  </div>
+  <div class="stat-box">
+    <div class="num" style="color:var(--muted)">{{ fixtures|length - played|length }}</div>
+    <div class="lbl">Upcoming</div>
+  </div>
+</div>
+
+<table class="fixture-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Home</th>
+      <th>Away</th>
+      <th>Venue</th>
+      <th>Comp</th>
+      <th>Result</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for f in fixtures %}
+    {% set is_home = f.home_team.upper().startswith('FC IRONCLAD') %}
+    <tr class="{{ 'home-row' if is_home else '' }}">
+      <td>{{ f.match_date }}</td>
+      <td style="color:var(--muted)">{{ f.kick_off[:5] }}</td>
+      <td>
+        <span class="team-name {{ 'our-team' if is_home else '' }}">
+          {{ f.home_team }}
+        </span>
+      </td>
+      <td>
+        <span class="team-name {{ 'our-team' if not is_home else '' }}">
+          {{ f.away_team }}
+        </span>
+      </td>
+      <td><span class="venue-text">{{ f.venue }}</span></td>
+      <td>
+        <span class="competition-badge {{ 'cup' if f.competition == 'Cup' else '' }}">
+          {{ f.competition }}
+        </span>
+      </td>
+      <td>
+        {% if f.result %}
+          {% set parts = f.result.split('-') %}
+          {% set our = (parts[0]|int) if is_home else (parts[1]|int) %}
+          {% set opp = (parts[1]|int) if is_home else (parts[0]|int) %}
+          {% if our > opp %}
+            <span class="result-badge result-win">{{ f.result }}</span>
+          {% elif our == opp %}
+            <span class="result-badge result-draw">{{ f.result }}</span>
+          {% else %}
+            <span class="result-badge result-loss">{{ f.result }}</span>
+          {% endif %}
+        {% else %}
+          <span class="result-tbd">TBD</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<p style="margin-top:16px; font-size:12px; color:var(--muted); text-align:right;">
+  ▌ Red stripe = home fixture &nbsp;|&nbsp;
+  <span style="color:var(--win)">Green</span> = Win &nbsp;
+  <span style="color:var(--draw)">Amber</span> = Draw &nbsp;
+  <span style="color:var(--loss)">Red</span> = Loss
+</p>
+{% endblock %}

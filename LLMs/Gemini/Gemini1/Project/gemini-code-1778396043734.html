@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Football Club News</title>
+</head>
+<body>
+    <h1>Club News Feed</h1>
+
+    <!-- Schedule Download -->
+    <a href="{{ url_for('download_schedule') }}">
+        <button>Download Game Schedule (PNG)</button>
+    </a>
+
+    <hr>
+
+    <!-- Member Posting Area -->
+    {% if session.get('user_id') %}
+        <h3>Welcome, {{ session['username'] }}! Post an update:</h3>
+        <form action="/post" method="POST">
+            <textarea name="content" required></textarea><br>
+            <button type="submit">Post to Feed</button>
+        </form>
+        <a href="/logout">Logout</a>
+    {% else %}
+        <p><a href="/login">Login</a> as a member to post updates.</p>
+    {% endif %}
+
+    <hr>
+
+    <!-- Feed Display -->
+    {% for post in posts %}
+        <div>
+            <strong>{{ post.username }}</strong> <small>{{ post.created_at }}</small>
+            <p>{{ post.content }}</p>
+        </div>
+    {% endfor %}
+</body>
+</html>

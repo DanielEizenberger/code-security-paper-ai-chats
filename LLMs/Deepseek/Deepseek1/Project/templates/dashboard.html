@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Member Dashboard</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #f0f0f0; }
+    header { background: #1e3c2c; color: white; padding: 1rem; text-align: center; }
+    nav a { color: white; margin: 0 15px; text-decoration: none; }
+    .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+    .form-box, .post-list { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+    button { background: #1e3c2c; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+    .post { border-bottom: 1px solid #ddd; padding: 15px 0; }
+</style>
+</head>
+<body>
+<header>
+    <h1>Member Dashboard</h1>
+    <nav><a href="/">News Feed</a> <a href="/schedule">Schedule</a> <a href="/logout">Logout</a></nav>
+</header>
+<div class="container">
+    <div class="form-box">
+        <h3>Create New News Post</h3>
+        <form method="POST">
+            <input type="text" name="title" placeholder="Post Title" required>
+            <textarea name="content" rows="5" placeholder="Write your update here..." required></textarea>
+            <button type="submit">Publish Post</button>
+        </form>
+    </div>
+    <div class="post-list">
+        <h3>Your Posts</h3>
+        {% for post in my_posts %}
+            <div class="post">
+                <strong>{{ post.title }}</strong><br>
+                <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                <p>{{ post.content }}</p>
+            </div>
+        {% else %}
+            <p>You haven't posted anything yet.</p>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>

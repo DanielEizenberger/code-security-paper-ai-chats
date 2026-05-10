@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}FC Ironclad – Post Update{% endblock %}
+
+{% block extra_head %}
+<style>
+.post-wrap {
+  max-width: 700px; margin: 48px auto;
+}
+.post-form-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px; border-bottom: 1px solid var(--border);
+}
+.post-form-header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 48px; text-transform: uppercase; line-height: 1;
+}
+.post-form-header h1 span { color: var(--gold); }
+.post-form-header p { color: var(--muted); margin-top: 8px; }
+.form-actions { display: flex; gap: 12px; margin-top: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="post-wrap">
+  <div class="post-form-header">
+    <h1>Post <span>Update</span></h1>
+    <p>Share news, training reports, or announcements with the FC Ironclad community.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">New Club Update — Posting as {{ member.username }}</div>
+    <div style="padding:32px;">
+      <form method="POST" action="/posts/new">
+        <div class="form-group">
+          <label for="title">Headline</label>
+          <input type="text" id="title" name="title"
+                 placeholder="e.g. Match Report: 3-1 Victory Over Red Phoenix" required>
+        </div>
+        <div class="form-group">
+          <label for="body">Content</label>
+          <textarea id="body" name="body" rows="8"
+                    placeholder="Write your update here…" required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-gold">Publish Update</button>
+          <a href="/" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

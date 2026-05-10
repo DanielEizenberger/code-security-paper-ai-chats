@@ -1,0 +1,52 @@
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+    margin: 0;
+}
+
+nav {
+    background: #111;
+    padding: 15px;
+}
+
+nav a {
+    color: white;
+    margin-right: 15px;
+    text-decoration: none;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    margin-top: 20px;
+}
+
+.post {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input, textarea {
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+button {
+    background: green;
+    color: white;
+    border: none;
+    padding: 10px;
+}
+
+.flash {
+    background: #ffeeba;
+    padding: 10px;
+    margin-bottom: 20px;
+}

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}FC Ironclad{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080c1a;
+  --surface:  #0f1628;
+  --surface2: #161e38;
+  --border:   #1f2a4a;
+  --accent:   #dc3232;
+  --accent2:  #ff4444;
+  --gold:     #ffc328;
+  --text:     #e8ecf8;
+  --muted:    #8892b0;
+  --win:      #3cc864;
+  --draw:     #f0b030;
+  --loss:     #dc3232;
+  --radius:   4px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+body > * { position: relative; z-index: 1; }
+
+/* ── Navigation ── */
+nav {
+  background: var(--surface);
+  border-bottom: 3px solid var(--accent);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: stretch;
+  padding: 0 24px;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 24px 0 0;
+  border-right: 1px solid var(--border);
+  text-decoration: none;
+}
+.nav-crest {
+  width: 44px; height: 44px;
+  background: var(--accent);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 18px; color: white;
+  flex-shrink: 0;
+}
+.nav-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 22px; letter-spacing: 0.05em;
+  color: white; line-height: 1.1;
+}
+.nav-name span { display: block; font-size: 11px; font-weight: 400; color: var(--gold); letter-spacing: 0.15em; }
+.nav-links {
+  display: flex; align-items: stretch; gap: 0;
+  flex: 1; list-style: none;
+  padding-left: 8px;
+}
+.nav-links a {
+  display: flex; align-items: center; padding: 0 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 15px; letter-spacing: 0.08em;
+  color: var(--muted); text-decoration: none; text-transform: uppercase;
+  border-bottom: 3px solid transparent; margin-bottom: -3px;
+  transition: color .2s, border-color .2s;
+}
+.nav-links a:hover, .nav-links a.active { color: white; border-color: var(--gold); }
+.nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px; border: none; border-radius: var(--radius);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 14px; letter-spacing: 0.08em;
+  text-transform: uppercase; text-decoration: none;
+  cursor: pointer; transition: all .15s;
+}
+.btn-primary   { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+.btn-gold      { background: var(--gold); color: #111; }
+.btn-gold:hover { background: #ffd060; transform: translateY(-1px); }
+.btn-ghost     { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: white; border-color: var(--muted); }
+.btn-sm        { padding: 5px 12px; font-size: 12px; }
+.btn-danger    { background: transparent; color: var(--loss); border: 1px solid var(--loss); }
+.btn-danger:hover { background: var(--loss); color: white; }
+
+/* ── Layout ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.page-header {
+  padding: 48px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+.page-header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 48px; letter-spacing: 0.03em;
+  text-transform: uppercase; line-height: 1;
+}
+.page-header h1 .accent { color: var(--accent); }
+.page-header p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 13px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gold);
+}
+
+/* ── Alerts / Flash ── */
+.alerts { padding: 16px 0 0; }
+.alert {
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; margin-bottom: 8px;
+  border-left: 4px solid;
+}
+.alert-success { background: rgba(60,200,100,.12); border-color: var(--win); color: var(--win); }
+.alert-danger  { background: rgba(220,50,50,.12);  border-color: var(--accent); color: #ff8080; }
+.alert-warning { background: rgba(240,176,48,.12); border-color: var(--draw); color: var(--draw); }
+.alert-info    { background: rgba(80,120,200,.12); border-color: #5080c8; color: #8ab4f8; }
+
+/* ── Forms ── */
+.form-group { margin-bottom: 18px; }
+label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+input[type=text], input[type=email], input[type=password],
+input[type=date], input[type=time], select, textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: 'Barlow', sans-serif; font-size: 15px;
+  transition: border-color .2s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255,195,40,.1);
+}
+textarea { resize: vertical; min-height: 120px; }
+
+/* ── Footer ── */
+footer {
+  margin-top: 80px; padding: 32px 0;
+  border-top: 1px solid var(--border);
+  text-align: center; color: var(--muted); font-size: 13px;
+}
+footer strong { color: var(--accent); font-family: 'Barlow Condensed', sans-serif; letter-spacing: .1em; }
+
+/* ── Utilities ── */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-4  { margin-top: 4px; }
+.mt-8  { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-16 { margin-bottom: 16px; }
+.text-muted { color: var(--muted); }
+.text-gold  { color: var(--gold); }
+.text-small { font-size: 13px; }
+.badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 2px; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif;
+}
+.badge-admin  { background: rgba(255,195,40,.15); color: var(--gold); border: 1px solid rgba(255,195,40,.3); }
+.badge-member { background: rgba(136,146,176,.12); color: var(--muted); border: 1px solid var(--border); }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">
+      <div class="nav-crest">FC</div>
+      <div class="nav-name">FC Ironclad<span>est. 1923</span></div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">News</a></li>
+      <li><a href="/schedule" class="{% if request.path == '/schedule' %}active{% endif %}">Schedule</a></li>
+      {% if member and member.role == 'admin' %}
+      <li><a href="/admin" class="{% if request.path.startswith('/admin') %}active{% endif %}">Admin</a></li>
+      {% endif %}
+    </ul>
+    <div class="nav-right">
+      {% if member %}
+        <span style="font-size:13px; color:var(--muted);">{{ member.username }}</span>
+        {% if member.role == 'admin' %}<span class="badge badge-admin">Admin</span>{% endif %}
+        <a href="/posts/new" class="btn btn-gold btn-sm">+ Post Update</a>
+        <a href="/logout" class="btn btn-ghost btn-sm">Logout</a>
+      {% else %}
+        <a href="/login" class="btn btn-primary btn-sm">Member Login</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="alerts">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<footer>
+  <strong>FC IRONCLAD</strong> &nbsp;·&nbsp; est. 1923 &nbsp;·&nbsp; Ironclad Stadium<br>
+  <span style="margin-top:6px; display:block;">© 2025 FC Ironclad. All rights reserved.</span>
+</footer>
+
+</body>
+</html>

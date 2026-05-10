@@ -1,0 +1,166 @@
+Building a full-stack web application for a football club involves setting up a database to manage users and posts, and a Flask backend to handle the logic.
+
+Below is a foundational structure to get you started.
+1. Database Schema (MySQL)
+
+First, you’ll need to create the tables for your members and their posts. Run these commands in your MySQL terminal:
+SQL
+
+CREATE DATABASE football_club;
+USE football_club;
+
+CREATE TABLE members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE news_feed (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id)
+);
+
+2. Project Structure
+
+Organize your files as follows:
+
+    app.py (Flask logic)
+
+    templates/ (HTML files: index.html, login.html)
+
+    static/ (Assets: schedule.png)
+
+3. The Flask Application (app.py)
+
+This script handles the authentication, the restricted news feed, and the file download.
+Python
+
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+import mysql.connector
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
+
+# Database Connection
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="yourpassword",
+        database="football_club"
+    )
+
+@app.route('/')
+def index():
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    # Fetch posts and join with member names
+    cursor.execute("SELECT news_feed.*, members.username FROM news_feed JOIN members ON news_feed.member_id = members.id ORDER BY created_at DESC")
+    posts = cursor.fetchall()
+    cursor.close()
+    db.close()
+    return render_template('index.html', posts=posts)
+
+@app.route('/post', methods=['POST'])
+def post_update():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    content = request.form['content']
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO news_feed (member_id, content) VALUES (%s, %s)", (session['user_id'], content))
+    db.commit()
+    cursor.close()
+    db.close()
+    return redirect(url_for('index'))
+
+@app.route('/download-schedule')
+def download_schedule():
+    return send_from_directory('static', 'schedule.png', as_attachment=True)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM members WHERE username = %s", (username,))
+        user = cursor.fetchone()
+
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+4. The Frontend (templates/index.html)
+
+This page displays the feed and provides the download link.
+HTML
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Football Club News</title>
+</head>
+<body>
+    <h1>Club News Feed</h1>
+
+    <!-- Schedule Download -->
+    <a href="{{ url_for('download_schedule') }}">
+        <button>Download Game Schedule (PNG)</button>
+    </a>
+
+    <hr>
+
+    <!-- Member Posting Area -->
+    {% if session.get('user_id') %}
+        <h3>Welcome, {{ session['username'] }}! Post an update:</h3>
+        <form action="/post" method="POST">
+            <textarea name="content" required></textarea><br>
+            <button type="submit">Post to Feed</button>
+        </form>
+        <a href="/logout">Logout</a>
+    {% else %}
+        <p><a href="/login">Login</a> as a member to post updates.</p>
+    {% endif %}
+
+    <hr>
+
+    <!-- Feed Display -->
+    {% for post in posts %}
+        <div>
+            <strong>{{ post.username }}</strong> <small>{{ post.created_at }}</small>
+            <p>{{ post.content }}</p>
+        </div>
+    {% endfor %}
+</body>
+</html>
+
+Key Features Implemented:
+
+    Authentication Check: In the /post route, we verify if user_id exists in the session before allowing a database write.
+
+    Public Access: The download_schedule route and the index view (reading posts) are accessible to everyone.
+
+    Data Integrity: The SQL schema uses a Foreign Key to ensure every post is linked to a valid member.
+
+    Security: Using werkzeug.security ensures you aren't storing raw passwords in your MySQL table.
+
+    Note: To test this, make sure you manually add a member to the members table using a hashed password (you can use a small Python script with generate_password_hash to get the string) or create a registration route!

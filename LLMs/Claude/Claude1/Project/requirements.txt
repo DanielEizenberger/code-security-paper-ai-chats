@@ -1,0 +1,7 @@
+# FC Ironclad – Python dependencies
+# Install with:  pip install -r requirements.txt
+
+flask>=3.0
+Pillow>=10.0
+mysql-connector-python>=8.3   # Only needed when running against MySQL
+                               # Remove this line for SQLite-only mode

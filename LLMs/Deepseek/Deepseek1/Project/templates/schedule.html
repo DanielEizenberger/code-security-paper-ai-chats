@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head><title>Game Schedule</title>
+<style>
+    body { font-family: Arial; background: #f0f0f0; text-align: center; }
+    .container { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #1e3c2c; color: white; }
+    .btn { background: #1e3c2c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px; }
+    img { max-width: 100%; margin: 20px 0; border: 2px solid #1e3c2c; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>⚽ Upcoming Games ⚽</h2>
+    <table>
+        <tr><th>Date</th><th>Time</th><th>Opponent</th><th>Location</th></tr>
+        {% for game in games %}
+        <tr>
+            <td>{{ game.game_date }}</td>
+            <td>{{ game.game_time.strftime('%H:%M') if game.game_time else 'TBD' }}</td>
+            <td>{{ game.opponent }}</td>
+            <td>{{ game.location }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <h3>Download Schedule as PNG</h3>
+    <a href="/download_schedule" class="btn">⬇️ Download Schedule PNG</a>
+    
+    <h3>Preview</h3>
+    <img src="/static/schedule.png?t={{ range(1,10000)|random }}" alt="Schedule Preview">
+    
+    <br><br>
+    <a href="/">Back to News</a>
+</div>
+</body>
+</html>

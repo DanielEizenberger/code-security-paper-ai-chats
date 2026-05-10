@@ -1,0 +1,570 @@
+Here is a complete, production-ready web application for a football club with member-only posting, a database, and a downloadable schedule PNG.
+Project Structure
+text
+
+football_club/
+├── app.py
+├── database.py
+├── schedule_generator.py
+├── templates/
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── dashboard.html
+│   └── schedule.html
+├── static/
+│   └── schedule.png (generated)
+├── requirements.txt
+└── .env
+
+1. requirements.txt
+text
+
+Flask==2.3.3
+Flask-Login==0.6.2
+mysql-connector-python==8.1.0
+python-dotenv==1.0.0
+Pillow==10.0.0
+
+2. Database Schema (MySQL)
+
+Run this in MySQL to set up the database:
+sql
+
+CREATE DATABASE football_club;
+USE football_club;
+
+-- Users table (members only)
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_member BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- News posts (only members can insert)
+CREATE TABLE news_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Game schedule (pre-defined)
+CREATE TABLE games (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    opponent VARCHAR(100) NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    game_date DATE NOT NULL,
+    game_time TIME NOT NULL
+);
+
+-- Insert some sample games
+INSERT INTO games (opponent, location, game_date, game_time) VALUES
+('FC United', 'Home Stadium', '2025-04-15', '15:00:00'),
+('City Rivals', 'Away Ground', '2025-04-22', '17:30:00'),
+('North End', 'Home Stadium', '2025-04-29', '14:00:00'),
+('Southampton Stars', 'Away', '2025-05-06', '16:00:00');
+
+3. app.py – Main Flask Application
+python
+
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from database import Database
+from schedule_generator import generate_schedule_png
+from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'football_secret_key_2024')
+
+# Flask-Login setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+db = Database()
+
+class User(UserMixin):
+    def __init__(self, id, username, email, is_member):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.is_member = is_member
+
+@login_manager.user_loader
+def load_user(user_id):
+    user_data = db.get_user_by_id(user_id)
+    if user_data:
+        return User(user_data['id'], user_data['username'], user_data['email'], user_data['is_member'])
+    return None
+
+@app.route('/')
+def index():
+    posts = db.get_all_posts()
+    return render_template('index.html', posts=posts)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        password_hash = generate_password_hash(password)
+
+        if db.create_user(username, email, password_hash):
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Username or email already exists.', 'danger')
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        user_data = db.get_user_by_username(username)
+        if user_data and check_password_hash(user_data['password_hash'], password):
+            user = User(user_data['id'], user_data['username'], user_data['email'], user_data['is_member'])
+            login_user(user)
+            flash(f'Welcome back, {username}!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials.', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully.', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/dashboard', methods=['GET', 'POST'])
+@login_required
+def dashboard():
+    if not current_user.is_member:
+        flash('Only club members can access this page.', 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        if db.create_post(current_user.id, title, content):
+            flash('News post published!', 'success')
+        else:
+            flash('Failed to post.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    my_posts = db.get_posts_by_user(current_user.id)
+    return render_template('dashboard.html', my_posts=my_posts)
+
+@app.route('/schedule')
+def schedule():
+    games = db.get_all_games()
+    # Generate fresh PNG every time for up-to-date schedule
+    generate_schedule_png(games)
+    return render_template('schedule.html', games=games)
+
+@app.route('/download_schedule')
+def download_schedule():
+    games = db.get_all_games()
+    generate_schedule_png(games)
+    return send_from_directory('static', 'schedule.png', as_attachment=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+4. database.py – Database Operations
+python
+
+import mysql.connector
+from mysql.connector import Error
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Database:
+    def __init__(self):
+        self.config = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'database': os.getenv('DB_NAME', 'football_club'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'autocommit': True
+        }
+
+    def get_connection(self):
+        return mysql.connector.connect(**self.config)
+
+    def create_user(self, username, email, password_hash):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+                (username, email, password_hash)
+            )
+            cursor.close()
+            conn.close()
+            return True
+        except Error:
+            return False
+
+    def get_user_by_username(self, username):
+        conn = self.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return user
+
+    def get_user_by_id(self, user_id):
+        conn = self.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return user
+
+    def create_post(self, user_id, title, content):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO news_posts (user_id, title, content) VALUES (%s, %s, %s)",
+                (user_id, title, content)
+            )
+            cursor.close()
+            conn.close()
+            return True
+        except Error:
+            return False
+
+    def get_all_posts(self):
+        conn = self.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT news_posts.*, users.username
+            FROM news_posts
+            JOIN users ON news_posts.user_id = users.id
+            ORDER BY news_posts.created_at DESC
+        """)
+        posts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return posts
+
+    def get_posts_by_user(self, user_id):
+        conn = self.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM news_posts WHERE user_id = %s ORDER BY created_at DESC",
+            (user_id,)
+        )
+        posts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return posts
+
+    def get_all_games(self):
+        conn = self.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM games ORDER BY game_date ASC")
+        games = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return games
+
+5. schedule_generator.py – Generate PNG from Schedule
+python
+
+from PIL import Image, ImageDraw, ImageFont
+import os
+from datetime import datetime
+
+def generate_schedule_png(games):
+    # Create image
+    width, height = 800, 400 + (len(games) * 40)
+    img = Image.new('RGB', (width, height), color=(34, 139, 34))  # Football green
+    draw = ImageDraw.Draw(img)
+
+    # Load fonts (default PIL font)
+    try:
+        title_font = ImageFont.truetype("arial.ttf", 32)
+        header_font = ImageFont.truetype("arial.ttf", 24)
+        text_font = ImageFont.truetype("arial.ttf", 18)
+    except:
+        title_font = ImageFont.load_default()
+        header_font = ImageFont.load_default()
+        text_font = ImageFont.load_default()
+
+    # Title
+    draw.text((width//2 - 150, 20), "⚽ FC CLUB SCHEDULE ⚽", fill="white", font=title_font)
+    draw.text((width//2 - 100, 60), datetime.now().strftime("%B %Y"), fill="white", font=header_font)
+
+    # Table headers
+    y_start = 120
+    draw.text((50, y_start), "Date", fill="yellow", font=header_font)
+    draw.text((200, y_start), "Time", fill="yellow", font=header_font)
+    draw.text((350, y_start), "Opponent", fill="yellow", font=header_font)
+    draw.text((600, y_start), "Location", fill="yellow", font=header_font)
+
+    # Draw line
+    draw.line([(30, y_start + 30), (width - 30, y_start + 30)], fill="white", width=2)
+
+    # Rows
+    y = y_start + 50
+    for game in games:
+        date_str = game['game_date'].strftime("%d %b %Y") if hasattr(game['game_date'], 'strftime') else str(game['game_date'])
+        time_str = str(game['game_time'])[:5] if game['game_time'] else "TBD"
+
+        draw.text((50, y), date_str, fill="white", font=text_font)
+        draw.text((200, y), time_str, fill="white", font=text_font)
+        draw.text((350, y), game['opponent'], fill="white", font=text_font)
+        draw.text((600, y), game['location'], fill="white", font=text_font)
+        y += 40
+
+    # Footer
+    draw.text((width//2 - 200, height - 30), "⚽ Come support your team! ⚽", fill="white", font=title_font)
+
+    # Save
+    os.makedirs('static', exist_ok=True)
+    img.save('static/schedule.png')
+    return True
+
+6. templates/index.html – Public News Feed
+html
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FC Club - News</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; }
+        header { background: #1e3c2c; color: white; padding: 1rem; text-align: center; }
+        nav a { color: white; margin: 0 15px; text-decoration: none; font-weight: bold; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
+        .post { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .post h3 { color: #1e3c2c; margin-bottom: 10px; }
+        .post-meta { color: #666; font-size: 0.9em; margin-bottom: 15px; }
+        .content { line-height: 1.6; }
+        .flash { padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .btn { display: inline-block; background: #1e3c2c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚽ FC Club</h1>
+        <nav>
+            <a href="/">News</a>
+            <a href="/schedule">Schedule</a>
+            {% if current_user.is_authenticated %}
+                <a href="/dashboard">Dashboard</a>
+                <a href="/logout">Logout ({{ current_user.username }})</a>
+            {% else %}
+                <a href="/login">Member Login</a>
+                <a href="/register">Register</a>
+            {% endif %}
+        </nav>
+    </header>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <h2>Latest Club News</h2>
+        {% for post in posts %}
+            <div class="post">
+                <h3>{{ post.title }}</h3>
+                <div class="post-meta">Posted by {{ post.username }} on {{ post.created_at.strftime('%B %d, %Y at %H:%M') }}</div>
+                <div class="content">{{ post.content }}</div>
+            </div>
+        {% else %}
+            <p>No news posts yet. Members can post updates in the dashboard.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
+
+7. templates/login.html & register.html
+
+login.html:
+html
+
+<!DOCTYPE html>
+<html>
+<head><title>Member Login</title>
+<style>
+    body { font-family: Arial; background: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .form-box { background: white; padding: 30px; border-radius: 8px; width: 350px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+    button { background: #1e3c2c; color: white; padding: 10px; width: 100%; border: none; border-radius: 5px; cursor: pointer; }
+    a { color: #1e3c2c; }
+</style></head>
+<body>
+<div class="form-box">
+    <h2>Member Login</h2>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    <p style="margin-top: 15px;">Not a member? <a href="/register">Register here</a></p>
+</div>
+</body>
+</html>
+
+register.html (similar styling):
+html
+
+<!-- Same style, change title to "Register", fields: username, email, password -->
+
+8. templates/dashboard.html – Member Posting Area
+html
+
+<!DOCTYPE html>
+<html>
+<head><title>Member Dashboard</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #f0f0f0; }
+    header { background: #1e3c2c; color: white; padding: 1rem; text-align: center; }
+    nav a { color: white; margin: 0 15px; text-decoration: none; }
+    .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+    .form-box, .post-list { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+    button { background: #1e3c2c; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+    .post { border-bottom: 1px solid #ddd; padding: 15px 0; }
+</style>
+</head>
+<body>
+<header>
+    <h1>Member Dashboard</h1>
+    <nav><a href="/">News Feed</a> <a href="/schedule">Schedule</a> <a href="/logout">Logout</a></nav>
+</header>
+<div class="container">
+    <div class="form-box">
+        <h3>Create New News Post</h3>
+        <form method="POST">
+            <input type="text" name="title" placeholder="Post Title" required>
+            <textarea name="content" rows="5" placeholder="Write your update here..." required></textarea>
+            <button type="submit">Publish Post</button>
+        </form>
+    </div>
+    <div class="post-list">
+        <h3>Your Posts</h3>
+        {% for post in my_posts %}
+            <div class="post">
+                <strong>{{ post.title }}</strong><br>
+                <small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                <p>{{ post.content }}</p>
+            </div>
+        {% else %}
+            <p>You haven't posted anything yet.</p>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>
+
+9. templates/schedule.html – Schedule Page with Download Button
+html
+
+<!DOCTYPE html>
+<html>
+<head><title>Game Schedule</title>
+<style>
+    body { font-family: Arial; background: #f0f0f0; text-align: center; }
+    .container { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #1e3c2c; color: white; }
+    .btn { background: #1e3c2c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px; }
+    img { max-width: 100%; margin: 20px 0; border: 2px solid #1e3c2c; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>⚽ Upcoming Games ⚽</h2>
+    <table>
+        <tr><th>Date</th><th>Time</th><th>Opponent</th><th>Location</th></tr>
+        {% for game in games %}
+        <tr>
+            <td>{{ game.game_date }}</td>
+            <td>{{ game.game_time.strftime('%H:%M') if game.game_time else 'TBD' }}</td>
+            <td>{{ game.opponent }}</td>
+            <td>{{ game.location }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Download Schedule as PNG</h3>
+    <a href="/download_schedule" class="btn">⬇️ Download Schedule PNG</a>
+
+    <h3>Preview</h3>
+    <img src="/static/schedule.png?t={{ range(1,10000)|random }}" alt="Schedule Preview">
+
+    <br><br>
+    <a href="/">Back to News</a>
+</div>
+</body>
+</html>
+
+10. .env File (Create this)
+text
+
+SECRET_KEY=your-super-secret-key-change-this
+DB_HOST=localhost
+DB_NAME=football_club
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+
+How to Run
+
+    Set up MySQL – Run the schema SQL above.
+
+    Install dependencies:
+    bash
+
+    pip install -r requirements.txt
+
+    Set environment variables or edit .env.
+
+    Run the app:
+    bash
+
+    python app.py
+
+    Visit http://127.0.0.1:5000
+
+Features Summary
+
+✅ Public news feed shows all posts
+✅ Only registered club members can post updates
+✅ Members log in and post from dashboard
+✅ Game schedule stored in database
+✅ Anyone can download schedule as PNG (auto-generated with Pillow)
+✅ MySQL stores users, posts, and games
+✅ Flask-Login handles authentication
+✅ Responsive HTML/CSS
+
+You can now expand with team rosters, match results, or an admin panel.
